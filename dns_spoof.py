@@ -2,7 +2,7 @@
 # Description: This program changes the DNS response of a website by suplanting the real domain name's IP with another/malicious IP (redirection_ip).
 #
 # sudo pip install netfilterqueue               --> Install netfilterqueue
-# echo 1 > /proc/sys/net/ipv4/ip_forward        --> Ip portforwarding 
+# echo 1 > /proc/sys/net/ipv4/ip_forward        --> Ip forwarding 
 # iptables -I FORWARD -j NFQUEUE --queue-num 0  --> For mitm. Trap all the packets that usually goes to the forward chain if it is are in the netfilter queue with queue number 0.
 # iptables -I OUTPUT -j NFQUEUE --queue-num 0   --> Use this and the next command instead if we are testing it in our own computer.
 # iptables -I INPUT -j NFQUEUE --queue-num 0    
